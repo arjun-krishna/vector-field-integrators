@@ -23,19 +23,19 @@ class Controller:
 
     def __init__(self) -> None:
         self.text_boxes = [TextBox() for i in range(2)]
+        # default filled in values
         self.text_boxes[0].reset_content('x*x - y*y - 4')
         self.text_boxes[1].reset_content('2*x*y')
 
     def activate_type_mode(self, text_box: TextBox) -> None:
         self.active_text_box = text_box
-        self.active_text_box.active = True
+        self.active_text_box.activate()
         self.type_mode = True
 
     def deactivate_type_mode(self) -> None:
         if self.type_mode:
             self.type_mode = False
-            self.active_text_box.active = False
-            self.active_text_box.set_content()
+            self.active_text_box.deactivate()
             self.active_text_box = None
 
     def event_handler(self, event: pygame.event.Event) -> None:

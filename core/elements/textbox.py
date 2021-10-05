@@ -36,18 +36,34 @@ class TextBox:
     def update_content(self, event: pygame.event.Event):
         if self.active:
             if event.key == pygame.K_BACKSPACE:
-                self.buffer = self.buffer[:-1]
+                l, r = self.buffer.split('|')
+                self.buffer = l[:-1] + '|' + r
             elif event.key == pygame.K_DELETE:
-                self.buffer = ''
+                self.buffer = '|'
+            elif event.key == pygame.K_SLASH: # ingore SLASH (|)
+                pass
+            elif event.key == pygame.K_LEFT:
+                l, r = self.buffer.split('|')
+                self.buffer = l[:-1] + '|' + l[-1:] + r
+            elif event.key == pygame.K_RIGHT:
+                l, r = self.buffer.split('|')
+                self.buffer = l + r[:1] + '|' + r[1:]
             else:
                 # TODO validate unicode ranges (pyfunc eval())
-                self.buffer += event.unicode
+                l, r = self.buffer.split('|')
+                self.buffer = l + event.unicode + '|' + r
     
     def reset_content(self, val:str = ''):
         self.content = val
         self.buffer = val
+
+    def activate(self):
+        self.active = True
+        self.buffer += '|'
     
-    def set_content(self):
+    def deactivate(self):
+        self.active = False
+        self.buffer = self.buffer.replace('|', '')
         self.content = self.buffer
 
     def get_content(self):
