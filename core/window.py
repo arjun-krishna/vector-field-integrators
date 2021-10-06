@@ -24,6 +24,10 @@ class AppWindow:
 
     def draw(self) -> None:
         self.window.fill(WINDOW_BACKGROUND)
+        # update geom ranges from ctrl
+        self.geom.xrange = self.ctrl.get_Xrange()
+        self.geom.yrange = self.ctrl.get_Yrange()
+        # end update
         self.ctrl.draw(self.window, self.geom)
         self.grid.draw(self.window, self.geom)
         self.quiver.draw(self.window, self.geom, self.ctrl.get_Vx(), self.ctrl.get_Vy())

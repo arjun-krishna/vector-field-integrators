@@ -22,10 +22,15 @@ class Controller:
     mouse_pos: Tuple[int, int] = None
 
     def __init__(self) -> None:
-        self.text_boxes = [TextBox() for i in range(2)]
+        self.text_boxes = [TextBox() for i in range(6)]
         # default filled in values
         self.text_boxes[0].reset_content('x*x - y*y - 4')
         self.text_boxes[1].reset_content('2*x*y')
+        self.text_boxes[2].reset_content('-3')
+        self.text_boxes[3].reset_content('3')
+        self.text_boxes[4].reset_content('-3')
+        self.text_boxes[5].reset_content('3')
+
 
     def activate_type_mode(self, text_box: TextBox) -> None:
         self.active_text_box = text_box
@@ -75,6 +80,18 @@ class Controller:
     def get_Vy(self) -> str:
         return self.text_boxes[1].content
 
+    def get_Xrange(self) -> Tuple[float, float]:
+        try:
+            return (float(self.text_boxes[2].content), float(self.text_boxes[3].content))
+        except Exception:
+            return (-3, 3)
+
+    def get_Yrange(self) -> Tuple[float, float]:
+        try:
+            return (float(self.text_boxes[4].content), float(self.text_boxes[5].content))
+        except Exception:
+            return (-3, 3)
+
     def draw(self, window: pygame.Surface, geom: WindowGeometry):
         BLACK = (0, 0, 0)
 
@@ -102,7 +119,7 @@ class Controller:
         window.blit(ts, (LR_MARGIN, SPACING_Y + 7))
         self.text_boxes[1].set_screen_coords(LR_MARGIN + 55, SPACING_Y, geom.controller_width - 2*LR_MARGIN - 55, 30)
         self.text_boxes[1].draw(window)
-        SPACING_Y += 3 * LR_MARGIN + 5
+        SPACING_Y += 3 * LR_MARGIN + 10
 
         # seperator
         pygame.draw.lines(window, BLACK, False, [(LR_MARGIN, SPACING_Y), (geom.controller_width - LR_MARGIN, SPACING_Y)], 2)
@@ -111,4 +128,33 @@ class Controller:
         # Grid
         ts = font_h1.render("Grid Settings", False, BLACK)
         window.blit(ts, (LR_MARGIN, SPACING_Y))
-        SPACING_Y += 3 * LR_MARGIN
+        SPACING_Y += 3.5 * LR_MARGIN
+
+        ts = font_h2.render("x (min)", False, BLACK)
+        window.blit(ts, (LR_MARGIN, SPACING_Y + 5))
+        self.text_boxes[2].set_screen_coords(LR_MARGIN + 45, SPACING_Y, 85, 30)
+        self.text_boxes[2].draw(window)
+
+        ts = font_h2.render("x (max)", False, BLACK)
+        window.blit(ts, (LR_MARGIN + 140, SPACING_Y + 5))
+        self.text_boxes[3].set_screen_coords(LR_MARGIN + 195, SPACING_Y, 85, 30)
+        self.text_boxes[3].draw(window)
+
+        SPACING_Y += 40
+
+        ts = font_h2.render("y (min)", False, BLACK)
+        window.blit(ts, (LR_MARGIN, SPACING_Y + 5))
+        self.text_boxes[4].set_screen_coords(LR_MARGIN + 45, SPACING_Y, 85, 30)
+        self.text_boxes[4].draw(window)
+
+        ts = font_h2.render("y (max)", False, BLACK)
+        window.blit(ts, (LR_MARGIN + 140, SPACING_Y + 5))
+        self.text_boxes[5].set_screen_coords(LR_MARGIN + 195, SPACING_Y, 85, 30)
+        self.text_boxes[5].draw(window)
+
+        SPACING_Y += 40
+
+        # seperator
+        pygame.draw.lines(window, BLACK, False, [(LR_MARGIN, SPACING_Y), (geom.controller_width - LR_MARGIN, SPACING_Y)], 2)
+        SPACING_Y += 3
+
