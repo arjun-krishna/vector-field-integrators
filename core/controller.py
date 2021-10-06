@@ -2,10 +2,11 @@ from typing import List, Tuple
 import pygame
 import sys
 
-from pygame.constants import K_ESCAPE, K_q
+from pygame.constants import K_ESCAPE, K_i, K_q
 from core.elements.textbox import TextBox
 
 from core.geom import WindowGeometry
+from core.world import World
 
 class Controller:
     insert_mode: bool = False
@@ -21,7 +22,9 @@ class Controller:
 
     mouse_pos: Tuple[int, int] = None
 
-    def __init__(self) -> None:
+    def __init__(self, world: World) -> None:
+        self.world = world
+
         self.text_boxes = [TextBox() for i in range(6)]
         # default filled in values
         self.text_boxes[0].reset_content('x*x - y*y - 4')
@@ -36,6 +39,7 @@ class Controller:
         self.active_text_box = text_box
         self.active_text_box.activate()
         self.type_mode = True
+        self.insert_mode = False
 
     def deactivate_type_mode(self) -> None:
         if self.type_mode:
@@ -43,20 +47,21 @@ class Controller:
             self.active_text_box.deactivate()
             self.active_text_box = None
 
-    def event_handler(self, event: pygame.event.Event) -> None:
+    def event_handler(self, geom: WindowGeometry, event: pygame.event.Event) -> None:
         if event.type == pygame.QUIT:
             sys.exit()
 
-        if event.type == pygame.MOUSEMOTION:
-            self.mouse_pos = pygame.mouse.get_pos()
+        self.mouse_pos = pygame.mouse.get_pos()
 
         if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.insert_mode:
+                self.world.add_point(self.mouse_pos)
             for text_box in self.text_boxes:
                 if text_box.mouse_in_textbox(self.mouse_pos[0], self.mouse_pos[1]):
                     self.deactivate_type_mode()
                     self.activate_type_mode(text_box)
                     break
-
+            
         # if type mode is active
         if event.type == pygame.KEYDOWN and event.key == K_ESCAPE:
             self.deactivate_type_mode()
@@ -70,6 +75,8 @@ class Controller:
         if event.type == pygame.KEYDOWN and not self.type_mode:
             if event.key == K_q:
                 sys.exit()
+            if event.key == K_i:
+                self.insert_mode = not self.insert_mode # toggle insert mode
 
     def get_mouse_pos(self) -> Tuple[int, int]:
         return self.mouse_pos
