@@ -9,6 +9,7 @@ from core.quiver import Quiver
 from core.ui_constants import GRID_COLOR, WINDOW_BACKGROUND
 from core.world import World
 
+
 class AppWindow:
 
     def __init__(self) -> None:
@@ -38,7 +39,8 @@ class AppWindow:
         self.grid.draw(self.window, self.geom)
 
         # draw quiver
-        self.quiver.draw(self.window, self.geom, self.ctrl.get_Vx(), self.ctrl.get_Vy())
+        self.quiver.draw(self.window, self.geom,
+                         self.ctrl.get_Vx(), self.ctrl.get_Vy())
 
         # draw world
         self.world.draw(self.window)

@@ -2,22 +2,23 @@ from core.geom import WindowGeometry
 import numpy as np
 import pygame
 
+
 class Quiver:
     COLOR = (0, 0, 255)
-    
+
     def __init__(self) -> None:
         pass
 
-    def draw(self, window: pygame.Surface, geom:WindowGeometry, vx_str:str, vy_str:str) -> None:
+    def draw(self, window: pygame.Surface, geom: WindowGeometry, vx_str: str, vy_str: str) -> None:
         xx, yy = geom.meshgrid()
-        
+
         @np.vectorize
         def Vx(x, y):
             try:
                 return eval(vx_str)
             except Exception:
                 return 0 * x
-        
+
         @np.vectorize
         def Vy(x, y):
             try:
@@ -44,8 +45,8 @@ class Quiver:
             V_x = V_x * S
             V_y = V_y * S
 
-            for (i, x) in enumerate(xx[:,0][1:-1]):
-                for (j, y) in enumerate(yy[0,:]):
+            for (i, x) in enumerate(xx[:, 0][1:-1]):
+                for (j, y) in enumerate(yy[0, :]):
                     # TODO use scaling on the co-ordinate rather screen scaling
                     # and transform from co-ordinates to screen co-ordinates
                     vx, vy = (V_x[i+1, j], V_y[i+1, j])

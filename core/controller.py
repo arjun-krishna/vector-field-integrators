@@ -1,13 +1,13 @@
 from typing import List, Tuple
 import pygame
 import sys
-from pygame import mouse
 
-from pygame.constants import K_ESCAPE, K_d, K_i, K_q, K_x
+from pygame.constants import K_ESCAPE, MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION, QUIT, K_d, K_i, K_q, K_x
 from core.elements.textbox import TextBox
 
 from core.geom import WindowGeometry
 from core.world import World
+
 
 class Controller:
     insert_mode: bool = False
@@ -35,7 +35,6 @@ class Controller:
         self.text_boxes[3].reset_content('3')
         self.text_boxes[4].reset_content('-3')
         self.text_boxes[5].reset_content('3')
-
 
     def activate_type_mode(self, text_box: TextBox) -> None:
         self.active_text_box = text_box
@@ -72,19 +71,19 @@ class Controller:
         return ((mos_pos[0] >= mx and mos_pos[0] <= Mx) and (mos_pos[1] >= my and mos_pos[1] <= My))
 
     def event_handler(self, geom: WindowGeometry, event: pygame.event.Event) -> None:
-        if event.type == pygame.QUIT:
+        if event.type == QUIT:
             sys.exit()
 
         mouse_pos = self.get_mouse_pos()
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == MOUSEBUTTONDOWN:
             if self.insert_mode:
                 self.world.add_point(mouse_pos)
             elif self.delete_mode:
                 di = self.world.get_closest_point_idx(mouse_pos)
                 if di is not None:
                     self.world.delete_point(di)
-            else: # drag
+            else:  # drag
                 self.grabbed_idx = self.world.get_closest_point_idx(mouse_pos)
 
             # insert box (9, 254, 60, 30)
@@ -96,27 +95,25 @@ class Controller:
             # clear box (169, 254, 60, 30)
             if self.checkRange(mouse_pos, 169, 229, 254, 284):
                 self.clear_world()
-            
+
             for text_box in self.text_boxes:
                 if text_box.mouse_in_textbox(mouse_pos[0], mouse_pos[1]):
                     self.deactivate_type_mode()
                     self.activate_type_mode(text_box)
                     break
-            
-        
 
-        if event.type == pygame.MOUSEBUTTONUP:
+        if event.type == MOUSEBUTTONUP:
             self.grabbed_idx = None
 
-        if event.type == pygame.MOUSEMOTION:
+        if event.type == MOUSEMOTION:
             if self.grabbed_idx is not None:
-                if pygame.mouse.get_cursor() != pygame.SYSTEM_CURSOR_HAND:                
+                if pygame.mouse.get_cursor() != pygame.SYSTEM_CURSOR_HAND:
                     pygame.mouse.set_system_cursor(pygame.SYSTEM_CURSOR_HAND)
                 self.world.update_point(self.grabbed_idx, mouse_pos)
             else:
                 if pygame.mouse.get_cursor() == pygame.SYSTEM_CURSOR_HAND:
                     pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-            
+
         # if type mode is active
         if event.type == pygame.KEYDOWN and event.key == K_ESCAPE:
             self.deactivate_type_mode()
@@ -126,7 +123,7 @@ class Controller:
                 self.deactivate_type_mode()
             else:
                 self.active_text_box.update_content(event)
-        
+
         if event.type == pygame.KEYDOWN and not self.type_mode:
             if event.key == K_q:
                 sys.exit()
@@ -148,7 +145,7 @@ class Controller:
 
     def get_Vx(self) -> str:
         return self.text_boxes[0].content
-    
+
     def get_Vy(self) -> str:
         return self.text_boxes[1].content
 
@@ -172,7 +169,7 @@ class Controller:
         else:
             if pygame.mouse.get_cursor() != pygame.SYSTEM_CURSOR_ARROW:
                 pygame.mouse.set_system_cursor(pygame.SYSTEM_CURSOR_ARROW)
-    
+
         BLACK = (0, 0, 0)
         GREEN = (0, 255, 0)
         RED = (255, 0, 0)
@@ -192,19 +189,22 @@ class Controller:
         # Vx(x, y)
         ts = font_h2.render("Vx(x, y)", False, BLACK)
         window.blit(ts, (LR_MARGIN, SPACING_Y + 7))
-        self.text_boxes[0].set_screen_coords(LR_MARGIN + 55, SPACING_Y, geom.controller_width - 2 * LR_MARGIN - 55, 30)
+        self.text_boxes[0].set_screen_coords(
+            LR_MARGIN + 55, SPACING_Y, geom.controller_width - 2 * LR_MARGIN - 55, 30)
         self.text_boxes[0].draw(window)
         SPACING_Y += 3 * LR_MARGIN + 5
 
         # Vy(x, y)
         ts = font_h2.render("Vy(x, y)", False, BLACK)
         window.blit(ts, (LR_MARGIN, SPACING_Y + 7))
-        self.text_boxes[1].set_screen_coords(LR_MARGIN + 55, SPACING_Y, geom.controller_width - 2*LR_MARGIN - 55, 30)
+        self.text_boxes[1].set_screen_coords(
+            LR_MARGIN + 55, SPACING_Y, geom.controller_width - 2*LR_MARGIN - 55, 30)
         self.text_boxes[1].draw(window)
         SPACING_Y += 3 * LR_MARGIN + 10
 
         # seperator
-        pygame.draw.lines(window, BLACK, False, [(LR_MARGIN, SPACING_Y), (geom.controller_width - LR_MARGIN, SPACING_Y)], 2)
+        pygame.draw.lines(window, BLACK, False, [
+                          (LR_MARGIN, SPACING_Y), (geom.controller_width - LR_MARGIN, SPACING_Y)], 2)
         SPACING_Y += 3
 
         # Grid
@@ -219,7 +219,8 @@ class Controller:
 
         ts = font_h2.render("x (max)", False, BLACK)
         window.blit(ts, (LR_MARGIN + 140, SPACING_Y + 5))
-        self.text_boxes[3].set_screen_coords(LR_MARGIN + 195, SPACING_Y, 85, 30)
+        self.text_boxes[3].set_screen_coords(
+            LR_MARGIN + 195, SPACING_Y, 85, 30)
         self.text_boxes[3].draw(window)
 
         SPACING_Y += 40
@@ -231,45 +232,52 @@ class Controller:
 
         ts = font_h2.render("y (max)", False, BLACK)
         window.blit(ts, (LR_MARGIN + 140, SPACING_Y + 5))
-        self.text_boxes[5].set_screen_coords(LR_MARGIN + 195, SPACING_Y, 85, 30)
+        self.text_boxes[5].set_screen_coords(
+            LR_MARGIN + 195, SPACING_Y, 85, 30)
         self.text_boxes[5].draw(window)
 
         SPACING_Y += 40
 
         # seperator
-        pygame.draw.lines(window, BLACK, False, [(LR_MARGIN, SPACING_Y), (geom.controller_width - LR_MARGIN, SPACING_Y)], 2)
+        pygame.draw.lines(window, BLACK, False, [
+                          (LR_MARGIN, SPACING_Y), (geom.controller_width - LR_MARGIN, SPACING_Y)], 2)
         SPACING_Y += 3
 
         # mode indicator
-        window.blit(font_h1.render("Modes", False, BLACK), (LR_MARGIN, SPACING_Y))
+        window.blit(font_h1.render("Modes", False, BLACK),
+                    (LR_MARGIN, SPACING_Y))
         SPACING_Y += 3.5 * LR_MARGIN
 
         # insert rect
-        m_rect = pygame.Rect(LR_MARGIN, SPACING_Y, 60, 30) # (9, 254, 60, 30)
+        m_rect = pygame.Rect(LR_MARGIN, SPACING_Y, 60, 30)  # (9, 254, 60, 30)
         col = GREEN if self.insert_mode else BLACK
         pygame.draw.rect(window, col, m_rect, 1)
-        window.blit(font_h2.render("INSERT", False, col), (LR_MARGIN + 5, SPACING_Y + 5))
+        window.blit(font_h2.render("INSERT", False, col),
+                    (LR_MARGIN + 5, SPACING_Y + 5))
 
         # delete rect
-        m_rect = pygame.Rect(LR_MARGIN + 80, SPACING_Y, 60, 30) # (89, 254, 60, 30)
+        m_rect = pygame.Rect(LR_MARGIN + 80, SPACING_Y,
+                             60, 30)  # (89, 254, 60, 30)
         col = RED if self.delete_mode else BLACK
         pygame.draw.rect(window, col, m_rect, 1)
-        window.blit(font_h2.render("DELETE", False, col), (LR_MARGIN + 85, SPACING_Y + 5))
+        window.blit(font_h2.render("DELETE", False, col),
+                    (LR_MARGIN + 85, SPACING_Y + 5))
 
         # clear rect
-        m_rect = pygame.Rect(LR_MARGIN + 160, SPACING_Y, 60, 30) # (169, 254, 60, 30)
+        m_rect = pygame.Rect(LR_MARGIN + 160, SPACING_Y,
+                             60, 30)  # (169, 254, 60, 30)
         pygame.draw.rect(window, BLACK, m_rect, 1)
-        window.blit(font_h2.render("CLEAR", False, BLACK), (LR_MARGIN + 165, SPACING_Y + 5))
+        window.blit(font_h2.render("CLEAR", False, BLACK),
+                    (LR_MARGIN + 165, SPACING_Y + 5))
 
         SPACING_Y += 40
 
         # seperator
-        pygame.draw.lines(window, BLACK, False, [(LR_MARGIN, SPACING_Y), (geom.controller_width - LR_MARGIN, SPACING_Y)], 2)
+        pygame.draw.lines(window, BLACK, False, [
+                          (LR_MARGIN, SPACING_Y), (geom.controller_width - LR_MARGIN, SPACING_Y)], 2)
         SPACING_Y += 3
-
 
         # m_rect = pygame.Rect(100, 255, 80, 40)
         # col = ACTIVE_COLOR if params['delete_mode'] else INACTIVE_COLOR
         # pygame.draw.rect(window, col, m_rect, 0)
         # window.blit(cmd_font.render("Delete", False, WINDOW_BACKGROUND), (113, 260))
-
