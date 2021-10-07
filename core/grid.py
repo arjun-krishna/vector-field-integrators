@@ -41,7 +41,7 @@ class Grid:
         for x, xs in zip(X, XS):
             pygame.draw.lines(window, self.axes_color, False, [(xs, yc+5), (xs, yc-5)], 1) 
             ts = self.font.render(f"{x}", False, self.axes_color)
-            window.blit(ts, (xs-3, yc+5))
+            window.blit(ts, (xs-8, yc+5))
         
         Y = np.linspace(geom.yrange[0], geom.yrange[1], 15)
         YS = [geom.transform_coords(xc, y)[1] for y in Y]
@@ -49,5 +49,5 @@ class Grid:
         for y, ys in zip(Y, YS):
             pygame.draw.lines(window, self.axes_color, False, [(xc+5, ys), (xc-5, ys)], 1) 
             ts = self.font.render(f"{y}", False, self.axes_color)
-            window.blit(ts, (xc+5, ys))
+            window.blit(ts, (xc+5, ys-8))
         

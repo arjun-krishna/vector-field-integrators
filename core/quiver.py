@@ -60,4 +60,3 @@ class Quiver:
                     ]
                     arrow_s = [geom.transform_coords(x, y) for (x, y) in arrow]
                     pygame.draw.polygon(window, self.COLOR, arrow_s, 1)
-        
