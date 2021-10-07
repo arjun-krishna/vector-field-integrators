@@ -14,7 +14,6 @@ class Controller:
     delete_mode: bool = False
     grabbed_idx: int = None
     anim_mode: bool = False
-    integrator: str = None
     grabbed_idx: int = None
     animation_loop: bool = False
 
@@ -76,13 +75,16 @@ class Controller:
 
         mouse_pos = self.get_mouse_pos()
 
-        if event.type == MOUSEBUTTONDOWN:
+        if event.type == MOUSEBUTTONDOWN and event.button == 1: # left button
             if self.insert_mode:
                 self.world.add_point(mouse_pos)
             elif self.delete_mode:
                 di = self.world.get_closest_point_idx(mouse_pos)
                 if di is not None:
                     self.world.delete_point(di)
+            elif self.type_mode:
+                if sum([tb.mouse_in_textbox(mouse_pos[0], mouse_pos[1]) for tb in self.text_boxes]) == 0:
+                    self.deactivate_type_mode()
             else:  # drag
                 self.grabbed_idx = self.world.get_closest_point_idx(mouse_pos)
 
@@ -102,7 +104,7 @@ class Controller:
                     self.activate_type_mode(text_box)
                     break
 
-        if event.type == MOUSEBUTTONUP:
+        if event.type == MOUSEBUTTONUP: # release grabbed point
             self.grabbed_idx = None
 
         if event.type == MOUSEMOTION:
@@ -277,7 +279,53 @@ class Controller:
                           (LR_MARGIN, SPACING_Y), (geom.controller_width - LR_MARGIN, SPACING_Y)], 2)
         SPACING_Y += 3
 
-        # m_rect = pygame.Rect(100, 255, 80, 40)
-        # col = ACTIVE_COLOR if params['delete_mode'] else INACTIVE_COLOR
-        # pygame.draw.rect(window, col, m_rect, 0)
-        # window.blit(cmd_font.render("Delete", False, WINDOW_BACKGROUND), (113, 260))
+        # Integrators config
+        window.blit(font_h1.render("Integrator Config", False, BLACK),
+                    (LR_MARGIN, SPACING_Y))
+        SPACING_Y += 3.5 * LR_MARGIN
+        window.blit(font_h2.render("n steps = ", False, BLACK), (LR_MARGIN, SPACING_Y + 5))
+        m_rect = pygame.Rect(LR_MARGIN + 60, SPACING_Y, geom.controller_width - 2 * LR_MARGIN - 70, 30)
+        pygame.draw.rect(window, BLACK, m_rect, 1)
+        SPACING_Y += 35
+
+        m_rect = pygame.Rect(LR_MARGIN, SPACING_Y,  geom.controller_width - 2 * LR_MARGIN - 10, 40)
+        pygame.draw.rect(window, BLACK, m_rect, 1)
+        window.blit(font_h2.render("Explicit Euler", False, BLACK),
+                    (LR_MARGIN + 10, SPACING_Y + 10))
+        window.blit(font_h2.render("dt", False, BLACK), (LR_MARGIN + 155, SPACING_Y + 10))
+        m_rect = pygame.Rect(LR_MARGIN + 170, SPACING_Y + 5, 100, 30)
+        pygame.draw.rect(window, BLACK, m_rect, 1)
+        SPACING_Y += 35
+
+        m_rect = pygame.Rect(LR_MARGIN, SPACING_Y,  geom.controller_width - 2 * LR_MARGIN - 10, 40)
+        pygame.draw.rect(window, BLACK, m_rect, 1)
+        window.blit(font_h2.render("Midpoint Method", False, BLACK),
+                    (LR_MARGIN + 10, SPACING_Y + 10))
+        window.blit(font_h2.render("dt", False, BLACK), (LR_MARGIN + 155, SPACING_Y + 10))
+        m_rect = pygame.Rect(LR_MARGIN + 170, SPACING_Y + 5, 100, 30)
+        pygame.draw.rect(window, BLACK, m_rect, 1)
+        SPACING_Y += 35
+
+        m_rect = pygame.Rect(LR_MARGIN, SPACING_Y,  geom.controller_width - 2 * LR_MARGIN - 10, 40)
+        pygame.draw.rect(window, BLACK, m_rect, 1)
+        window.blit(font_h2.render("RK4", False, BLACK),
+                    (LR_MARGIN + 10, SPACING_Y + 10))
+        window.blit(font_h2.render("dt", False, BLACK), (LR_MARGIN + 155, SPACING_Y + 10))
+        m_rect = pygame.Rect(LR_MARGIN + 170, SPACING_Y + 5, 100, 30)
+        pygame.draw.rect(window, BLACK, m_rect, 1)
+        SPACING_Y += 45
+
+        # seperator
+        pygame.draw.lines(window, BLACK, False, [
+                          (LR_MARGIN, SPACING_Y), (geom.controller_width - LR_MARGIN, SPACING_Y)], 2)
+        SPACING_Y += 3
+
+
+        # RIGHT Pane World selector
+        LR_MARGIN = geom.pane2 + 10
+        SPACING_Y = 10
+        pygame.draw.lines(window, BLACK, False, [(LR_MARGIN, 0), (LR_MARGIN, geom.window_size[1])], 2)
+        LR_MARGIN += 10
+        window.blit(font_h1.render("Points", False, BLACK), (LR_MARGIN, SPACING_Y))
+        SPACING_Y += 30
+        pygame.draw.lines(window, BLACK, False, [(LR_MARGIN - 10, SPACING_Y), (geom.window_size[0], SPACING_Y)])
