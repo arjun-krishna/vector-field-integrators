@@ -8,15 +8,25 @@ import numpy as np
 
 class World:
     points = np.array([]).reshape(0, 2)
+    meta_data = np.array([]).reshape(0,4) # nsteps, dt_euler, dt_midpoint, dt_rk4
+    active_ipls = np.array([], dtype=np.bool8).reshape(0, 3) # euler, midpoint, rk4
     COLOR = (201, 45, 34)  # (255, 0, 0)
+    SELECTED_COLOR = (235, 143, 52)
+    BLACK = (0, 0, 0)
     i = 0
     dt = 2
+    selected_idx = None
+    display_idx = True
 
     def __init__(self, geom: WindowGeometry) -> None:
         self.geom = geom
+        self.font = pygame.font.SysFont('arial', 14)
 
     def clear(self) -> None:
         self.points = np.array([]).reshape(0, 2)
+        self.meta_data = np.array([]).reshape(0, 4)
+        self.active_ipls = np.array([], dtype=np.bool8).reshape(0, 3)
+        self.selected_idx = None
 
     def update_geom(self, geom: WindowGeometry) -> None:
         self.geom = geom
@@ -24,8 +34,9 @@ class World:
     def add_point(self, p: Tuple[int, int]) -> None:
         '''Add point to the world'''
         if self.geom.on_grid(p[0], p[1]):
-            self.points = np.vstack(
-                [self.points, self.geom.transform_screen_coords(p[0], p[1])])
+            self.points = np.vstack([self.points, self.geom.transform_screen_coords(p[0], p[1])])
+            self.meta_data = np.vstack([self.meta_data, [100, 0, 0.5, 0]])
+            self.active_ipls = np.vstack([self.active_ipls, [False, True, False]])
 
     def get_points(self) -> List[Tuple[int, int]]:
         '''Get points in the world'''
@@ -54,11 +65,20 @@ class World:
         if self.geom.on_grid(p[0], p[1]):
             self.points[idx] = self.geom.transform_screen_coords(p[0], p[1])
 
+    def update_meta_data(self, idx: int, meta_idx: int, value: float) -> None:
+        self.meta_data[idx,meta_idx] = value
+
     def delete_point(self, idx: int) -> None:
         self.points = np.delete(self.points, idx, 0)
+        self.meta_data = np.delete(self.meta_data, idx, 0)
+        self.active_ipls = np.delete(self.active_ipls, idx, 0)
 
     def draw(self, window: pygame.Surface):
-        for p in self.points:
+        for idx, p in enumerate(self.points):
             ps = self.geom.transform_coords(p[0], p[1], clip=False)
             if ps is not None:
-                pygame.draw.circle(window, self.COLOR, ps, 10)
+                col = self.SELECTED_COLOR if self.selected_idx == idx else self.COLOR
+                pygame.draw.circle(window, col, ps, 10)
+                if self.display_idx:
+                    ts = self.font.render(f"P{idx}", False, self.BLACK)
+                    window.blit(ts, (ps[0], ps[1]+10))
