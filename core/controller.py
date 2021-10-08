@@ -110,6 +110,15 @@ class Controller:
             if self.checkRange(mouse_pos, 169, 229, 254, 284):
                 self.clear_world()
 
+            # selection id toggle integrator
+            if self.world.selected_idx is not None:
+                if self.checkRange(mouse_pos, 9, 179, 418.5, 458.5):
+                    self.world.toggle_integrator(0)
+                if self.checkRange(mouse_pos, 9, 179, 463.5, 503.5):
+                    self.world.toggle_integrator(1)
+                if self.checkRange(mouse_pos, 9, 179, 508.5, 548.5):
+                    self.world.toggle_integrator(2)
+
             for id, text_box in enumerate(self.text_boxes[:6]):
                 if text_box.mouse_in_textbox(mouse_pos[0], mouse_pos[1]):
                     self.deactivate_type_mode()
@@ -215,11 +224,12 @@ class Controller:
 
         font_h1 = pygame.font.SysFont('arial', 18, bold=True)
         font_h2 = pygame.font.SysFont('arial', 16)
+        font_p = pygame.font.SysFont('georgia', 15, italic=True)
 
         # Vector Field
         ts = font_h1.render("Vector Field", False, BLACK)
         window.blit(ts, (LR_MARGIN, SPACING_Y))
-        SPACING_Y += 3 * LR_MARGIN
+        SPACING_Y += 3.5 * LR_MARGIN
 
         # Vx(x, y)
         ts = font_h2.render("Vx(x, y)", False, BLACK)
@@ -315,7 +325,9 @@ class Controller:
         # Integrators config
         window.blit(font_h1.render("Integrator Config", False, BLACK),
                     (LR_MARGIN, SPACING_Y))
-        SPACING_Y += 3.5 * LR_MARGIN
+        SPACING_Y += 3 * LR_MARGIN
+        window.blit(font_p.render("Right-click a point to start configuring", False, BLACK), (LR_MARGIN, SPACING_Y))
+        SPACING_Y += 30
         if self.world.selected_idx is not None:
             point_str = "P" + str(self.world.selected_idx)
             aipls = self.world.active_ipls[self.world.selected_idx,:]
@@ -335,7 +347,7 @@ class Controller:
             LR_MARGIN + 60, SPACING_Y, geom.controller_width - 2 * LR_MARGIN - 70, 30)
         self.text_boxes[6].draw(window)
         SPACING_Y += 35
-
+        # 418.5
         m_rect = pygame.Rect(LR_MARGIN, SPACING_Y,
                              geom.controller_width - 2 * LR_MARGIN - 10, 40)
         pygame.draw.rect(window, cols[0], m_rect, 1)
@@ -348,6 +360,7 @@ class Controller:
         self.text_boxes[7].draw(window)
         SPACING_Y += 45
 
+        # 463.5
         m_rect = pygame.Rect(LR_MARGIN, SPACING_Y,
                              geom.controller_width - 2 * LR_MARGIN - 10, 40)
         pygame.draw.rect(window, cols[1], m_rect, 1)
@@ -360,6 +373,7 @@ class Controller:
         self.text_boxes[8].draw(window)
         SPACING_Y += 45
 
+        # 508.5
         m_rect = pygame.Rect(LR_MARGIN, SPACING_Y,
                              geom.controller_width - 2 * LR_MARGIN - 10, 40)
         pygame.draw.rect(window, cols[2], m_rect, 1)

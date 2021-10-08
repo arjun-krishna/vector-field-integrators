@@ -35,8 +35,12 @@ class World:
         '''Add point to the world'''
         if self.geom.on_grid(p[0], p[1]):
             self.points = np.vstack([self.points, self.geom.transform_screen_coords(p[0], p[1])])
-            self.meta_data = np.vstack([self.meta_data, [100, 0, 0.5, 0]])
+            self.meta_data = np.vstack([self.meta_data, [100, 0.5, 0.5, 0.5]])
             self.active_ipls = np.vstack([self.active_ipls, [False, True, False]])
+    
+    def toggle_integrator(self, idx: int) -> None:
+        if self.selected_idx is not None:
+            self.active_ipls[self.selected_idx, idx] = not self.active_ipls[self.selected_idx, idx]
 
     def get_points(self) -> List[Tuple[int, int]]:
         '''Get points in the world'''
