@@ -3,7 +3,7 @@ from numpy.lib.twodim_base import triu_indices
 import pygame
 import sys
 
-from pygame.constants import K_ESCAPE, K_SPACE, MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION, QUIT, K_d, K_i, K_q, K_x
+from pygame.constants import K_ESCAPE, K_SPACE, MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION, QUIT, K_d, K_i, K_q, K_s, K_x
 from core.elements.textbox import TextBox
 
 from core.geom import WindowGeometry
@@ -51,6 +51,9 @@ class Controller:
             if self.world.selected_idx is not None and self.active_text_box_id > 5:
                 x = float(self.active_text_box.content) if self.active_text_box.content else 0
                 self.world.update_meta_data(self.world.selected_idx, self.active_text_box_id - 6, x)
+            if self.world.multi_select_mode and self.active_text_box_id > 5:
+                x = float(self.active_text_box.content) if self.active_text_box.content else 0
+                self.world.update_meta_data_on_bounding_box(self.active_text_box_id - 6, x)
             self.active_text_box = None
             self.active_text_box_id = None
     
@@ -58,7 +61,10 @@ class Controller:
         self.animate_mode = True
         self.insert_mode = False
         self.delete_mode = False
-        self.type_mode = False
+        self.world.multi_select_mode = False
+        self.world.select_corner1 = None
+        self.world.select_corner2 = None
+        self.deactivate_type_mode()
         self.grabbed_idx = None
         self.world.selected_idx = None
         self.clearInterpolatorConfig()
@@ -71,9 +77,25 @@ class Controller:
     def toggle_insert_mode(self) -> None:
         self.insert_mode = not self.insert_mode
         self.delete_mode = False
+        self.world.multi_select_mode = False
+        self.world.select_corner1 = None
+        self.world.select_corner2 = None
         if self.animate_mode:
             self.stop_anim()
-        self.type_mode = False
+        self.deactivate_type_mode()
+        self.grabbed_idx = None
+        self.world.selected_idx = None
+        self.clearInterpolatorConfig()
+
+    def toggle_mutliselect(self) -> None:
+        self.world.multi_select_mode = not self.world.multi_select_mode
+        self.insert_mode = False
+        self.delete_mode = False
+        self.world.select_corner1 = None
+        self.world.select_corner2 = None
+        self.deactivate_type_mode()
+        if self.animate_mode:
+            self.stop_anim()
         self.grabbed_idx = None
         self.world.selected_idx = None
         self.clearInterpolatorConfig()
@@ -81,6 +103,10 @@ class Controller:
     def toggle_delete_mode(self) -> None:
         self.delete_mode = not self.delete_mode
         self.insert_mode = False
+        self.world.multi_select_mode = False
+        self.world.select_corner1 = None
+        self.world.select_corner2 = None
+        self.deactivate_type_mode()
         if self.animate_mode:
             self.stop_anim()
         self.grabbed_idx = None
@@ -88,6 +114,7 @@ class Controller:
         self.clearInterpolatorConfig()
 
     def clear_world(self) -> None:
+        self.deactivate_type_mode()
         self.world.clear()
         self.insert_mode = False
         self.delete_mode = False
@@ -109,6 +136,7 @@ class Controller:
             sys.exit()
 
         mouse_pos = self.get_mouse_pos()
+        self.world.mouse_pos = mouse_pos # allow world to track mouse pos
 
         if event.type == MOUSEBUTTONDOWN and event.button == 1:  # left button
             if self.insert_mode:
@@ -120,21 +148,33 @@ class Controller:
             elif self.type_mode:
                 if sum([tb.mouse_in_textbox(mouse_pos[0], mouse_pos[1]) for tb in self.text_boxes]) == 0:
                     self.deactivate_type_mode()
+            elif self.world.multi_select_mode:
+                if self.world.select_corner1 is None and geom.on_grid(mouse_pos[0], mouse_pos[1]): # setting corner 1
+                    self.world.select_corner1 = mouse_pos
+                    self.clearInterpolatorConfig()
             else:  # drag
                 self.grabbed_idx = self.world.get_closest_point_idx(mouse_pos)
 
             # insert box (9, 254, 60, 30)
             if self.checkRange(mouse_pos, 9, 69, 254, 284):
                 self.toggle_insert_mode()
-            # delete box (89, 254, 60, 30)
-            if self.checkRange(mouse_pos, 89, 149, 254, 284):
+            # delete box (79, 254, 60, 30)
+            if self.checkRange(mouse_pos, 79, 139, 254, 284):
                 self.toggle_delete_mode()
-            # clear box (169, 254, 60, 30)
-            if self.checkRange(mouse_pos, 169, 229, 254, 284):
+            # clear box (149, 254, 60, 30)
+            if self.checkRange(mouse_pos, 149, 209, 254, 284):
                 self.clear_world()
-
+            # m-select box (219, 254, 75, 30)
+            if self.checkRange(mouse_pos, 219, 294, 254, 284):
+                self.toggle_mutliselect()
+            # animate (9 563.5 272 40)
+            if self.checkRange(mouse_pos, 9, 281, 563.5, 603.5):
+                if not self.animate_mode:
+                    self.start_anim()
+                else:
+                    self.stop_anim()
             # selection id toggle integrator
-            if self.world.selected_idx is not None:
+            if self.world.selected_idx is not None or self.world.multi_select_mode:
                 if self.checkRange(mouse_pos, 9, 179, 418.5, 458.5):
                     self.world.toggle_integrator(0)
                 if self.checkRange(mouse_pos, 9, 179, 463.5, 503.5):
@@ -149,7 +189,7 @@ class Controller:
                     self.activate_type_mode(text_box)
                     break
 
-            if self.world.selected_idx is not None:
+            if self.world.selected_idx is not None or self.world.multi_select_mode:
                 for idx, text_box in enumerate(self.text_boxes[6:]):
                     if text_box.mouse_in_textbox(mouse_pos[0], mouse_pos[1]):
                         self.deactivate_type_mode()
@@ -158,7 +198,8 @@ class Controller:
                         break
 
         if event.type == MOUSEBUTTONDOWN and event.button == 3:  # right button
-            if not self.type_mode and not self.insert_mode and not self.delete_mode and not self.animate_mode:
+            if not self.type_mode and not self.insert_mode and not self.delete_mode \
+                and not self.animate_mode and not self.world.multi_select_mode:
                 self.world.selected_idx = self.world.get_closest_point_idx(mouse_pos)
                 if self.world.selected_idx is not None:
                     meta_data = self.world.meta_data[self.world.selected_idx,:]
@@ -170,6 +211,10 @@ class Controller:
 
         if event.type == MOUSEBUTTONUP:  # release grabbed point
             self.grabbed_idx = None
+            if self.world.multi_select_mode and geom.on_grid(mouse_pos[0], mouse_pos[1]):
+                if self.world.select_corner2 is None:
+                    self.world.select_corner2 = mouse_pos
+                    self.world.clear_config_on_bounding_box()
 
         if event.type == MOUSEMOTION:
             if self.grabbed_idx is not None:
@@ -197,6 +242,8 @@ class Controller:
                 self.toggle_insert_mode()
             if event.key == K_x:
                 self.toggle_delete_mode()
+            if event.key == K_s:
+                self.toggle_mutliselect()
             if event.key == K_d:
                 self.clear_world()
             if event.key == K_SPACE:
@@ -237,6 +284,9 @@ class Controller:
             return (-3, 3)
 
     def draw(self, window: pygame.Surface, geom: WindowGeometry):
+        if self.animate_mode and not self.world.in_anim:
+            self.stop_anim()
+
         mx, my = self.get_mouse_pos()
         if geom.on_grid(mx, my):
             if self.grabbed_idx is None and pygame.mouse.get_cursor() != pygame.SYSTEM_CURSOR_CROSSHAIR:
@@ -331,19 +381,26 @@ class Controller:
                     (LR_MARGIN + 5, SPACING_Y + 5))
 
         # delete rect
-        m_rect = pygame.Rect(LR_MARGIN + 80, SPACING_Y,
-                             60, 30)  # (89, 254, 60, 30)
+        m_rect = pygame.Rect(LR_MARGIN + 70, SPACING_Y,
+                             60, 30)  # (79, 254, 60, 30)
         col = RED if self.delete_mode else BLACK
         pygame.draw.rect(window, col, m_rect, 1)
         window.blit(font_h2.render("DELETE", False, col),
-                    (LR_MARGIN + 85, SPACING_Y + 5))
+                    (LR_MARGIN + 75, SPACING_Y + 5))
 
         # clear rect
-        m_rect = pygame.Rect(LR_MARGIN + 160, SPACING_Y,
-                             60, 30)  # (169, 254, 60, 30)
+        m_rect = pygame.Rect(LR_MARGIN + 140, SPACING_Y,
+                             60, 30)  # (149, 254, 60, 30)
         pygame.draw.rect(window, BLACK, m_rect, 1)
         window.blit(font_h2.render("CLEAR", False, BLACK),
-                    (LR_MARGIN + 165, SPACING_Y + 5))
+                    (LR_MARGIN + 145, SPACING_Y + 5))
+
+        m_rect = pygame.Rect(LR_MARGIN + 210, SPACING_Y,
+                             75, 30)  # (219, 254, 75, 30)
+        col = GREEN if self.world.multi_select_mode else BLACK                     
+        pygame.draw.rect(window, col, m_rect, 1)
+        window.blit(font_h2.render("M-SELECT", False, col),
+                    (LR_MARGIN + 215, SPACING_Y + 5))
 
         SPACING_Y += 40
 
@@ -362,13 +419,22 @@ class Controller:
             point_str = "P" + str(self.world.selected_idx)
             aipls = self.world.active_ipls[self.world.selected_idx,:]
             cols = [GREEN if c else BLACK for c in aipls]
+        elif self.world.multi_select_mode:
+            ids = self.world.get_point_ids_in_bounding_box()
+            point_str = "Selected " + str(len(ids)) + " points"
+            if len(ids):
+                aipls = self.world.active_ipls[ids[0],:]
+                cols = [GREEN if c else BLACK for c in aipls]
+            else:
+                aipls = [False] * 3
+                cols = [BLACK] * 3
         else:
             point_str = ""
             aipls = [False] * 3
             cols = [BLACK] * 3
         window.blit(font_h2.render("Selected Point =  " + point_str, False, BLACK),
                     (LR_MARGIN, SPACING_Y))
-        m_rect = pygame.Rect(LR_MARGIN + 100, SPACING_Y, 50, 20)
+        m_rect = pygame.Rect(LR_MARGIN + 100, SPACING_Y, 150, 20)
         pygame.draw.rect(window, BLACK, m_rect, 1)
         SPACING_Y += 25
         window.blit(font_h2.render("n steps = ", False, BLACK),
@@ -419,7 +485,14 @@ class Controller:
         # seperator
         pygame.draw.lines(window, BLACK, False, [
                           (LR_MARGIN, SPACING_Y), (geom.controller_width - LR_MARGIN, SPACING_Y)], 2)
-        SPACING_Y += 3
+        SPACING_Y += 10
+
+        m_rect = pygame.Rect(LR_MARGIN, SPACING_Y,
+                             geom.controller_width - 2 * LR_MARGIN - 10, 40)
+        col = GREEN if self.animate_mode else BLACK
+        pygame.draw.rect(window, col, m_rect, 1)
+        window.blit(font_h1.render("ANIMATE", False, col),
+                    (LR_MARGIN + geom.controller_width / 3, SPACING_Y + 10))
 
         # RIGHT Pane World selector
         LR_MARGIN = geom.pane2 + 10
@@ -427,10 +500,32 @@ class Controller:
         pygame.draw.lines(window, BLACK, False, [
                           (LR_MARGIN, 0), (LR_MARGIN, geom.window_size[1])], 2)
         LR_MARGIN += 10
-        window.blit(font_h1.render("Points", False, BLACK),
+        window.blit(font_h1.render("Info", False, BLACK),
                     (LR_MARGIN, SPACING_Y))
         SPACING_Y += 30
         pygame.draw.lines(window, BLACK, False, [
                           (LR_MARGIN - 10, SPACING_Y), (geom.window_size[0], SPACING_Y)])
-
+        SPACING_Y += 5
+        window.blit(font_h2.render("Toggle animation - SPC", False, BLACK), (LR_MARGIN, SPACING_Y))
+        SPACING_Y += 20
+        window.blit(font_h2.render("Toggle insert mode - i", False, BLACK), (LR_MARGIN, SPACING_Y))
+        SPACING_Y += 20
+        window.blit(font_h2.render("Toggle delete mode - x", False, BLACK), (LR_MARGIN, SPACING_Y))
+        SPACING_Y += 20
+        window.blit(font_h2.render("Multiselect Mode - s", False, BLACK), (LR_MARGIN, SPACING_Y))
+        SPACING_Y += 20
+        pygame.draw.lines(window, BLACK, False, [
+                          (LR_MARGIN - 10, SPACING_Y), (geom.window_size[0], SPACING_Y)])
+        SPACING_Y += 5
+        window.blit(font_h1.render("Animation Color Codes", False, BLACK), (LR_MARGIN, SPACING_Y))
+        SPACING_Y += 20
+        window.blit(font_h2.render("Explicit-Euler - RED", False, BLACK), (LR_MARGIN, SPACING_Y))
+        SPACING_Y += 20
+        window.blit(font_h2.render("Midpoint - GREEN", False, BLACK), (LR_MARGIN, SPACING_Y))
+        SPACING_Y += 20
+        window.blit(font_h2.render("RK4 - BLUE", False, BLACK), (LR_MARGIN, SPACING_Y))
+        SPACING_Y += 20
+        pygame.draw.lines(window, BLACK, False, [
+                          (LR_MARGIN - 10, SPACING_Y), (geom.window_size[0], SPACING_Y)])
+        SPACING_Y += 5
         

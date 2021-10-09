@@ -18,6 +18,11 @@ class World:
     BLACK = (0, 0, 0)
     selected_idx = None
     
+    multi_select_mode = False
+    select_corner1: Tuple[int, int] = None
+    select_corner2: Tuple[int, int] = None
+    mouse_pos: Tuple[int, int] = None
+    
     # UI
     display_idx = True
     draw_trails = True
@@ -53,6 +58,9 @@ class World:
         self.meta_data = np.array([]).reshape(0, 4)
         self.active_ipls = np.array([], dtype=np.bool8).reshape(0, 3)
         self.selected_idx = None
+        self.multi_select_mode = False
+        self.select_corner1 = None
+        self.select_corner2 = None
 
     def update_geom(self, geom: WindowGeometry) -> None:
         self.geom = geom
@@ -67,6 +75,9 @@ class World:
     def toggle_integrator(self, idx: int) -> None:
         if self.selected_idx is not None:
             self.active_ipls[self.selected_idx, idx] = not self.active_ipls[self.selected_idx, idx]
+        if self.multi_select_mode:
+            ids = self.get_point_ids_in_bounding_box()
+            self.active_ipls[ids, idx] = np.logical_not(self.active_ipls[ids, idx])
 
     def get_points(self) -> List[Tuple[int, int]]:
         '''Get points in the world'''
@@ -98,6 +109,39 @@ class World:
     def update_meta_data(self, idx: int, meta_idx: int, value: float) -> None:
         self.meta_data[idx,meta_idx] = value
 
+    def get_point_ids_in_bounding_box(self):
+        ids = []
+        if self.select_corner1 is not None and self.select_corner2 is not None:
+            c1, c2 = self.select_corner1, self.select_corner2
+            W = abs(c2[0] - c1[0])
+            H = abs(c2[1] - c1[1])
+            if c1[0] < c2[0] and c1[1] < c2[1]:
+                top, left = c1[0], c1[1]
+            elif c1[0] < c2[0] and c1[1] > c2[1]:
+                top, left = c1[0], c2[1]
+            elif c1[0] > c2[0] and c1[1] > c2[1]:
+                top, left = c2[0], c2[1]
+            else:
+                top, left = c2[0], c1[1]
+
+            xmin, ymax = self.geom.transform_screen_coords(top, left)
+            xmax, ymin = self.geom.transform_screen_coords(top+W, left+H)
+            
+            for i, p in enumerate(self.points):
+                if p[0] >= xmin and p[0] <= xmax and \
+                    p[1] >= ymin and p[1] <= ymax:
+                    ids.append(i)
+        return ids
+
+    def update_meta_data_on_bounding_box(self, meta_idx: int, value: float) -> None:
+        ids = self.get_point_ids_in_bounding_box()
+        self.meta_data[ids,meta_idx] = value
+
+    def clear_config_on_bounding_box(self) -> None:
+        ids = self.get_point_ids_in_bounding_box()
+        self.active_ipls[ids, :] = [False, False, False]
+        self.meta_data[ids, :] = [0, 0, 0, 0]
+
     def delete_point(self, idx: int) -> None:
         self.points = np.delete(self.points, idx, 0)
         self.meta_data = np.delete(self.meta_data, idx, 0)
@@ -109,6 +153,25 @@ class World:
             self.step_world()
         else:
             self.draw_points(window)
+            if self.multi_select_mode:
+                c1 = self.select_corner1
+                mp = self.mouse_pos if self.geom.on_grid(self.mouse_pos[0], self.mouse_pos[1]) else None
+                c2 = self.select_corner2 if self.select_corner2 else mp
+
+                if c1 is not None and c2 is not None:
+                    # draw selection rectangle
+                    W = abs(c2[0] - c1[0])
+                    H = abs(c2[1] - c1[1])
+                    if c1[0] < c2[0] and c1[1] < c2[1]:
+                        top, left = c1[0], c1[1]
+                    elif c1[0] < c2[0] and c1[1] > c2[1]:
+                        top, left = c1[0], c2[1]
+                    elif c1[0] > c2[0] and c1[1] > c2[1]:
+                        top, left = c2[0], c2[1]
+                    else:
+                        top, left = c2[0], c1[1]
+                    rect = pygame.Rect(top, left, W, H)
+                    pygame.draw.rect(window, self.BLACK, rect, 2)
 
     def draw_points(self, window: pygame.Surface):
         for idx, p in enumerate(self.points):
