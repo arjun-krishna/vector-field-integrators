@@ -1,8 +1,9 @@
 from typing import List, Tuple
+from numpy.lib.twodim_base import triu_indices
 import pygame
 import sys
 
-from pygame.constants import K_ESCAPE, MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION, QUIT, K_d, K_i, K_q, K_x
+from pygame.constants import K_ESCAPE, K_SPACE, MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION, QUIT, K_d, K_i, K_q, K_x
 from core.elements.textbox import TextBox
 
 from core.geom import WindowGeometry
@@ -12,6 +13,8 @@ from core.world import World
 class Controller:
     insert_mode: bool = False
     delete_mode: bool = False
+    animate_mode: bool = False
+
     grabbed_idx: int = None
 
     type_mode: bool = False
@@ -50,10 +53,26 @@ class Controller:
                 self.world.update_meta_data(self.world.selected_idx, self.active_text_box_id - 6, x)
             self.active_text_box = None
             self.active_text_box_id = None
+    
+    def start_anim(self) -> None:
+        self.animate_mode = True
+        self.insert_mode = False
+        self.delete_mode = False
+        self.type_mode = False
+        self.grabbed_idx = None
+        self.world.selected_idx = None
+        self.clearInterpolatorConfig()
+        self.world.start_animation(self.get_Vx(), self.get_Vy())
+
+    def stop_anim(self) -> None:
+        self.animate_mode = False
+        self.world.stop_animation()
 
     def toggle_insert_mode(self) -> None:
         self.insert_mode = not self.insert_mode
         self.delete_mode = False
+        if self.animate_mode:
+            self.stop_anim()
         self.type_mode = False
         self.grabbed_idx = None
         self.world.selected_idx = None
@@ -62,6 +81,8 @@ class Controller:
     def toggle_delete_mode(self) -> None:
         self.delete_mode = not self.delete_mode
         self.insert_mode = False
+        if self.animate_mode:
+            self.stop_anim()
         self.grabbed_idx = None
         self.world.selected_idx = None
         self.clearInterpolatorConfig()
@@ -70,6 +91,8 @@ class Controller:
         self.world.clear()
         self.insert_mode = False
         self.delete_mode = False
+        if self.animate_mode:
+            self.stop_anim()
         self.grabbed_idx = None
         self.world.selected_idx = None
         self.clearInterpolatorConfig()
@@ -119,23 +142,23 @@ class Controller:
                 if self.checkRange(mouse_pos, 9, 179, 508.5, 548.5):
                     self.world.toggle_integrator(2)
 
-            for id, text_box in enumerate(self.text_boxes[:6]):
+            for idx, text_box in enumerate(self.text_boxes[:6]):
                 if text_box.mouse_in_textbox(mouse_pos[0], mouse_pos[1]):
                     self.deactivate_type_mode()
-                    self.active_text_box_id = id
+                    self.active_text_box_id = idx
                     self.activate_type_mode(text_box)
                     break
 
             if self.world.selected_idx is not None:
-                for id, text_box in enumerate(self.text_boxes[6:]):
+                for idx, text_box in enumerate(self.text_boxes[6:]):
                     if text_box.mouse_in_textbox(mouse_pos[0], mouse_pos[1]):
                         self.deactivate_type_mode()
-                        self.active_text_box_id = id + 6
+                        self.active_text_box_id = idx + 6
                         self.activate_type_mode(text_box)
                         break
 
         if event.type == MOUSEBUTTONDOWN and event.button == 3:  # right button
-            if not self.type_mode and not self.insert_mode and not self.delete_mode:
+            if not self.type_mode and not self.insert_mode and not self.delete_mode and not self.animate_mode:
                 self.world.selected_idx = self.world.get_closest_point_idx(mouse_pos)
                 if self.world.selected_idx is not None:
                     meta_data = self.world.meta_data[self.world.selected_idx,:]
@@ -176,11 +199,18 @@ class Controller:
                 self.toggle_delete_mode()
             if event.key == K_d:
                 self.clear_world()
+            if event.key == K_SPACE:
+                if not self.animate_mode:
+                    self.start_anim()
+                else:
+                    self.stop_anim()
             if event.key == K_ESCAPE:
                 self.insert_mode = False
                 self.delete_mode = False
                 if self.type_mode:
                     self.deactivate_type_mode()
+                if self.animate_mode:
+                    self.stop_anim()
                 self.grabbed_idx = None
                 self.world.selected_idx = None
                 self.clearInterpolatorConfig()
