@@ -11,7 +11,15 @@ class System:
         def vectorField(X: np.ndarray):
             x, y = X[:,0], X[:,1] # passing in x, y
             try:
-                return np.stack([eval(V_x), eval(V_y)], axis=1)
+                if 'x' not in V_x and 'y' not in V_x:
+                    X = np.broadcast_to(eval(V_x), x.shape)
+                else:
+                    X = eval(V_x)
+                if 'x' not in V_y and 'y' not in V_y:
+                    Y = np.broadcast_to(eval(V_y), y.shape)
+                else:
+                    Y = eval(V_y)
+                return np.stack([X, Y], axis=1)
             except Exception:
                 return np.zeros(X.shape)
         self.V = vectorField

@@ -1,5 +1,13 @@
 # Interactive Vector Field integrators
 
+Built using PyGame
+
+To launch the application run:
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
 The UI provides the following interactions:
 - insert (points can be inserted)
 - delete (click near point to delete)
