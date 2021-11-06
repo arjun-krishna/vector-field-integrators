@@ -1,5 +1,7 @@
 # Interactive Vector Field integrators
 
+![Application Layout](demo/ivecintegrator.png?raw=true "Application Layout")
+
 Built using PyGame
 
 To launch the application run:
